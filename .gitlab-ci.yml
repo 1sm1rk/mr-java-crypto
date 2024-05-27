@@ -34,7 +34,7 @@ java-build:
     paths:
       - .m2/repository
   script:
-    - mvn $MAVEN_CLI_OPTS package deploy -s ci_settings.xml -DskipTests=false
+    - mvn $MAVEN_CLI_OPTS package deploy -s ci-settings.xml -DskipTests=false
   artifacts:
     name: "Maven artifacts from $CI_PROJECT_NAME on $CI_COMMIT_REF_SLUG"
     paths:
