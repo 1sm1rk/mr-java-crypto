@@ -15,7 +15,8 @@
 	<description>crypto helper for the moonrat framework</description>
 	<properties>
 		<java.version>17</java.version>
-	</properties>
+        <spring-boot.repackage.skip>true</spring-boot.repackage.skip>
+    </properties>
 	
 	<!-- gitlab -->
 	<repositories>
