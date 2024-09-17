@@ -16,7 +16,10 @@ import javax.crypto.spec.SecretKeySpec;
 import org.apache.commons.codec.binary.Base64;
 
 public class AESHelper {
-	private final static String ALGORITHM = "AES/CBC/PKCS5Padding";
+	private AESHelper () {
+	}
+	
+    private static final String ALGORITHM = "AES/CBC/PKCS5Padding";
 	
 	/**
 	 * return AES key derived from a password
