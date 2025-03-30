@@ -58,15 +58,34 @@ public class RSAHelper {
 			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
 			IllegalBlockSizeException, BadPaddingException {
 		
+		return new String(encrypt(input.getBytes(), publicKey, encodeBase64));
+	}
+	
+	/**
+	 * 
+	 * @param input
+	 * @param publicKey
+	 * @param encodeBase64
+	 * @return
+	 * @throws NoSuchAlgorithmException
+	 * @throws NoSuchPaddingException
+	 * @throws InvalidKeyException
+	 * @throws IllegalBlockSizeException
+	 * @throws BadPaddingException
+	 */
+	public static byte[] encrypt(byte[] input, PublicKey publicKey, boolean encodeBase64) 
+			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
+			IllegalBlockSizeException, BadPaddingException {
+		
 		//cipher
 		Cipher encryptCipher = Cipher.getInstance(ALGORITHM);
 		encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
 		
 		//decode text		
 		if (encodeBase64) {
-			return new String(Base64.encodeBase64(encryptCipher.doFinal(input.getBytes())));
+			return Base64.encodeBase64(encryptCipher.doFinal(input));
 		} else {
-			return new String(encryptCipher.doFinal(input.getBytes()));
+			return encryptCipher.doFinal(input);
 		}
 	}
 	
@@ -88,6 +107,27 @@ public class RSAHelper {
 			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, 
 			IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
 		
+		return new String(decrypt(cipherText.getBytes(), privateKey, isBase64));
+	}
+	
+	/**
+	 * 
+	 * @param cipherText
+	 * @param privateKey
+	 * @param iv
+	 * @param isBase64
+	 * @return
+	 * @throws NoSuchAlgorithmException
+	 * @throws NoSuchPaddingException
+	 * @throws InvalidKeyException
+	 * @throws IllegalBlockSizeException
+	 * @throws BadPaddingException
+	 * @throws InvalidAlgorithmParameterException
+	 */
+	public static byte[] decrypt(byte[] cipherText, PrivateKey privateKey, boolean isBase64) 
+			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, 
+			IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
+		
 		//cipher
 		Cipher decryptCipher = Cipher.getInstance(ALGORITHM);
 		decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
@@ -95,12 +135,12 @@ public class RSAHelper {
 		//decode text		
 		if (isBase64) {
 			if (Base64.isBase64(cipherText))
-				return new String(decryptCipher.doFinal(Base64.decodeBase64(cipherText)));
+				return decryptCipher.doFinal(Base64.decodeBase64(cipherText));
 			else {
 				throw new InvalidAlgorithmParameterException("cipher text is not base64 encoded");
 			}
 		} else {
-			return new String(decryptCipher.doFinal(cipherText.getBytes()));
+			return decryptCipher.doFinal(cipherText);
 		}
 	}
 }
