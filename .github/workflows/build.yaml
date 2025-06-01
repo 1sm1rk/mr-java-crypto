@@ -22,6 +22,6 @@ jobs:
         run: mvn clean install
 
       - name: Publish to GitHub Packages
-        run: mvn deploy -DskipTests
+        run: mvn deploy -DskipTests -s .github/maven-settings.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
