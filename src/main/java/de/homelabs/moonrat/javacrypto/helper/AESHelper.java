@@ -10,7 +10,6 @@ import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.slf4j.Logger;
@@ -45,6 +44,7 @@ public class AESHelper {
 
 	/**
 	 * generates a new AES symmetric key for AES/GCM encryption
+	 * with a key size of 256 bit
 	 * 
 	 * @return Optional<SecretKey>
 	 */
