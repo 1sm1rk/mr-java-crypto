@@ -1,172 +1,156 @@
 package de.homelabs.moonrat.javacrypto.helper;
 
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Base64;
+import java.util.Optional;
 
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
+import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class AESHelper {
-	Logger log = LoggerFactory.getLogger(this.getClass());
-	private static final String ALGORITHM = "AES/CBC/PKCS5Padding";
+	private static final Logger logger = LoggerFactory.getLogger(AESHelper.class);
+	private static final String ALGORITHM = "AES/GCM/NoPadding";
+	private static final int KEY_SIZE = 256;
+	private static final int IV_SIZE = 32;
+	private static final int TAG_LENGTH_BITS = 128;
 	
-	private AESHelper() {
-	}
-
+	
 	/**
 	 * return AES key derived from a password
 	 * 
 	 * @param password
-	 * @return SecretKey
-	 * @throws NoSuchAlgorithmException
-	 * @throws InvalidKeySpecException
+	 * @return Optional<SecretKey>
 	 */
-	public static SecretKey getAESKeyFromPassword(String password)
+	public static Optional<SecretKey> getAESKeyFromPassword(String password)
 			throws NoSuchAlgorithmException, InvalidKeySpecException {
 
-		SecretKey secret = new SecretKeySpec(password.getBytes(), "AES");
-		return secret;
+		try {
+			SecretKey secret = new SecretKeySpec(password.getBytes(), "AES");
+			return Optional.of(secret);
+		} catch (Exception e) {
+			logger.error(e.getLocalizedMessage());
+		}
+		
+		return Optional.empty();
 	}
 
 	/**
+	 * generates a new AES symmetric key for AES/GCM encryption
+	 * 
+	 * @return Optional<SecretKey>
+	 */
+	public static Optional<SecretKey> generateKeys() {
+		try {
+			KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+			keyGen.init(KEY_SIZE);
+			return Optional.of(keyGen.generateKey());
+		} catch (Exception e) {
+			logger.error(e.getLocalizedMessage());
+		}
+		
+		return Optional.empty();
+	}
+	
+	 /**
+     * Generates a random nonce (IV) for AES/GCM encryption.
+     *
+     * @param size The size of the nonce in bytes.
+     * 
+     * @return The generated nonce as a byte array.
+     */
+    public static byte[] generateNonce() {
+        byte[] nonce = new byte[IV_SIZE];
+        new SecureRandom().nextBytes(nonce); // Fill nonce with random bytes
+        return nonce;
+    }
+    
+    /**
 	 * AES encrypt an [input] string with [KEY], [ALGORITHM] and [iv]
 	 * 
-	 * @param input - input string
-	 * @param key   - 32 bit secret key
-	 * @param iv    - 16 bit initialisation vector (used for alternation)
-	 * @return returns an Base64 AES encoded string
-	 * @throws NoSuchPaddingException
-	 * @throws NoSuchAlgorithmException
-	 * @throws InvalidAlgorithmParameterException
-	 * @throws InvalidKeyException
-	 * @throws BadPaddingException
-	 * @throws IllegalBlockSizeException
-	 */
-	public static String encrypt(String input, SecretKey key, IvParameterSpec iv, boolean encodeBase64)
-			throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
-			InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
-
-		Cipher cipher = Cipher.getInstance(ALGORITHM);
-		cipher.init(Cipher.ENCRYPT_MODE, key, iv);
-		byte[] cipherText = cipher.doFinal(input.getBytes());
-
-		// decide base64 or not
-		if (encodeBase64) {
-			return new String(Base64.encodeBase64(cipherText));
-		} else {
-			return new String(cipherText);
-		}
-	}
-
-	/**
-	 * AES encrypt an [input] string with [KEY], [ALGORITHM] and [iv]
+	 * @param input - input 
+	 * @param key   - AES/GCM secret key
+	 * @param iv    - random nonce (used for alternation)
 	 * 
-	 * @param input
-	 * @param key
-	 * @param iv
-	 * @return
-	 * @throws NoSuchPaddingException
-	 * @throws NoSuchAlgorithmException
-	 * @throws InvalidAlgorithmParameterException
-	 * @throws InvalidKeyException
-	 * @throws BadPaddingException
-	 * @throws IllegalBlockSizeException
-	 * @throws InvalidKeySpecException
+	 * @return returns an AES encoded string, Base64 encoded depending on flag
 	 */
-	public static String encrypt(String input, String key, String iv, boolean encodeBase64)
-			throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
-			InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidKeySpecException {
-
-		SecretKey secretKey = AESHelper.getAESKeyFromPassword(key);
-		IvParameterSpec ivSpec = new IvParameterSpec(iv.getBytes());
-		Cipher cipher = Cipher.getInstance(ALGORITHM);
-		cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec);
-		byte[] cipherText = cipher.doFinal(input.getBytes());
-
-		// decide base64 or not
-		if (encodeBase64) {
-			return new String(Base64.encodeBase64(cipherText));
-		} else {
-			return new String(cipherText);
-		}
-	}
-
-	/**
-	 * decrypt an AES encrypted [cipherText] string with [KEY], [ALGORITHM] and [iv]
-	 * 
-	 * @param cipherText - encrypted string
-	 * @param key        - 32 bit secret key
-	 * @param iv         - 16 bit initialisation vector (used for alternation)
-	 * @return
-	 * @throws NoSuchPaddingException
-	 * @throws NoSuchAlgorithmException
-	 * @throws InvalidAlgorithmParameterException
-	 * @throws InvalidKeyException
-	 * @throws BadPaddingException
-	 * @throws IllegalBlockSizeException
-	 */
-	public static String decrypt(String cipherText, SecretKey key, IvParameterSpec iv, boolean isBase64)
-			throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
-			InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
-
-		Cipher cipher = Cipher.getInstance(ALGORITHM);
-		cipher.init(Cipher.DECRYPT_MODE, key, iv);
-		
-
-		if (isBase64) {
-			if (Base64.isBase64(cipherText))
-				return new String(cipher.doFinal(Base64.decodeBase64(cipherText)));
-			else {
-				throw new InvalidAlgorithmParameterException("cipher text is not base64 encoded");
-			}
-		} else {
-			return new String(cipher.doFinal(cipherText.getBytes()));
-		}
-	}
-
-	/**
-	 * 
-	 * @param cipherText
-	 * @param key
-	 * @param iv
-	 * @return
-	 * @throws NoSuchPaddingException
-	 * @throws NoSuchAlgorithmException
-	 * @throws InvalidAlgorithmParameterException
-	 * @throws InvalidKeyException
-	 * @throws BadPaddingException
-	 * @throws IllegalBlockSizeException
-	 * @throws InvalidKeySpecException
-	 */
-	public static String decrypt(String cipherText, String key, String iv, boolean isBase64)
-			throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
-			InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidKeySpecException {
-
-		SecretKey secretKey = AESHelper.getAESKeyFromPassword(key);
-		IvParameterSpec ivSpec = new IvParameterSpec(iv.getBytes());
-
-		Cipher cipher = Cipher.getInstance(ALGORITHM);
-		cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec);
-		
-		if (isBase64) {
-			if (Base64.isBase64(cipherText))
-				return new String(cipher.doFinal(Base64.decodeBase64(cipherText)));
-			else {
-				throw new InvalidAlgorithmParameterException("cipher text is not base64 encoded");
-			}
-		} else {
-			return new String(cipher.doFinal(cipherText.getBytes()));
-		}
-	}
+    public static Optional<byte[]> encrypt(byte[] input, SecretKey key, byte[] iv, boolean encodeBase64) {
+    	//validate
+    	if (input == null || key == null || iv == null ) {
+    		logger.error("Invalid parameters, input, key or iv are null");
+    		return Optional.empty();
+    	}
+    	
+    	if (input.length <= 0) {
+    		logger.error("input is empty");
+    		return Optional.empty();
+    	}
+    	
+    	//start
+    	try {
+	        // Initialize cipher in AES-GCM mode
+	        Cipher cipher = Cipher.getInstance(ALGORITHM);
+	        GCMParameterSpec gcmSpec = new GCMParameterSpec(TAG_LENGTH_BITS, iv);
+	        cipher.init(Cipher.ENCRYPT_MODE, key, gcmSpec);
+	
+	        // Encrypt the plaintext
+	        byte[] encryptedBytes = cipher.doFinal(input);
+	
+	        // Combine IV and encrypted text and encode them as Base64
+	        byte[] combinedIvAndCipherText = new byte[iv.length + encryptedBytes.length];
+	        System.arraycopy(iv, 0, combinedIvAndCipherText, 0, iv.length);
+	        System.arraycopy(encryptedBytes, 0, combinedIvAndCipherText, iv.length, encryptedBytes.length);
+	
+	        if (encodeBase64) {
+	        	return Optional.of(Base64.getEncoder().encode(combinedIvAndCipherText));
+	        } else {
+	        	return Optional.of(combinedIvAndCipherText);
+	        }
+    	} catch (Exception e) {
+    		logger.error(e.getLocalizedMessage());
+    		return Optional.empty();
+    	}
+    }
+	
+    /**
+     * decrypt an AES encrypted byte array
+     * 
+     * @param input
+     * @param key
+     * @param isBase64
+     * @return String decrypted byte array
+     */
+    public static Optional<byte[]> decrypt(byte[] input, SecretKey key, boolean isBase64) {
+    	try {
+	    	// decode base64 if needed
+	   		byte[] decodedCipherText = isBase64 ? Base64.getDecoder().decode(input) : input;  	
+	    		
+	        // Extract IV and encrypted text
+	        byte[] iv = new byte[IV_SIZE];
+	        System.arraycopy(decodedCipherText, 0, iv, 0, iv.length);    
+	        byte[] encryptedText = new byte[decodedCipherText.length - IV_SIZE];
+	        System.arraycopy(decodedCipherText, IV_SIZE, encryptedText, 0, encryptedText.length);
+	
+	        // Initialize cipher in AES-GCM mode
+	        GCMParameterSpec gcmSpec = new GCMParameterSpec(TAG_LENGTH_BITS, iv);
+	        Cipher cipher = Cipher.getInstance(ALGORITHM);
+	        cipher.init(Cipher.DECRYPT_MODE, key, gcmSpec);
+	        
+	        // Decrypt the ciphertext
+	        byte[] decryptedBytes = cipher.doFinal(encryptedText);
+	
+	        return Optional.of(decryptedBytes);
+    	} catch (Exception e) {
+    		logger.error(e.getLocalizedMessage());
+    		return Optional.empty();
+    	}
+    }
 }

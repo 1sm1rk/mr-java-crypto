@@ -14,7 +14,9 @@
 	<name>mr-java-crypto</name>
 	<description>crypto helper for the moonrat framework</description>
 	<properties>
-		<java.version>21</java.version>
+		<java.version>25</java.version>
+		<maven.compiler.target>25</maven.compiler.target>
+    	<maven.compiler.source>25</maven.compiler.source>
         <spring-boot.repackage.skip>true</spring-boot.repackage.skip>
     </properties>
 	

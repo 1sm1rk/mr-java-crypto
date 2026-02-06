@@ -1,15 +1,16 @@
 package de.homelabs.moonrat.javacrypto;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
+import java.util.Optional;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import javax.crypto.SecretKey;
 
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -23,45 +24,28 @@ class MrJavaCryptoApplicationTests {
 
 	private static final Logger log = LoggerFactory.getLogger(MrJavaCryptoApplicationTests.class);
 	
-	String iv = "1234567890123456";	
-	String skey = "12345678901234567890123456789012";
-	String input = "$$00123";
-	String testVector = "YyPRZBKRAyzvg1KncL8mhg==";
+	//String iv = "1234567890123456";	
+	//private static final String skey = "12345678901234567890123456789012";
+	private static final String input = "$$00123";
+	private static final String testVector = "YyPRZBKRAyzvg1KncL8mhg==";
 
 	
 	@Test
-	void aesEncryptionTest() {
-		String encryptedString = "";
-		try {
-			encryptedString = AESHelper.encrypt(input, skey, iv, true);
-		} catch (InvalidKeyException | NoSuchPaddingException | NoSuchAlgorithmException
-				| InvalidAlgorithmParameterException | BadPaddingException | IllegalBlockSizeException
-				| InvalidKeySpecException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	void aesEncryptionAndDecryptionTest() {
+		SecretKey key = AESHelper.generateKeys().orElseThrow();
+		byte[] nonce = AESHelper.generateNonce();
 		
-		log.info("encrypted String - {}", encryptedString);
+		byte[] encryptedBuffer = AESHelper.encrypt(input.getBytes(), key, nonce, true).orElseThrow();
 		
-		assertEquals(testVector,encryptedString);
-	}
+				
+		log.info("encrypted String - {}", new String(encryptedBuffer));
+		
+		//assertEquals(testVector,new String(encryptedBuffer));
 	
-	@Test
-	void aesDecryptionTest() {
-		String decryptedString = "";
+		byte[] decryptedString = AESHelper.decrypt(encryptedBuffer, key, true).orElseThrow();
+		log.info("decrypted String - {}", new String(decryptedString));
 		
-		try {
-			decryptedString = AESHelper.decrypt(testVector, skey, iv, true);
-		} catch (InvalidKeyException | NoSuchPaddingException | NoSuchAlgorithmException
-				| InvalidAlgorithmParameterException | BadPaddingException | IllegalBlockSizeException
-				| InvalidKeySpecException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		log.info("decrypted String - {}", decryptedString);
-		
-		assertEquals(input,decryptedString);
+		assertEquals(input, new String(decryptedString));
 	}
 	
 	@Test
@@ -69,12 +53,13 @@ class MrJavaCryptoApplicationTests {
 			throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, 
 			IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
 		
-		CryptKeyHolder keyHolder = RSAHelper.createRSAKeys(2048);
+		Optional<CryptKeyHolder> oKeyHolder = RSAHelper.createRSAKeys(4096);
+		CryptKeyHolder keyHolder = oKeyHolder.orElseThrow();
 		
-		String cipherText = RSAHelper.encrypt(testVector, keyHolder.getPublicKey(), true);
+		String cipherText = RSAHelper.encrypt(testVector, keyHolder.publicKey(), true);
 		log.info("rsa encrypted string: {}", cipherText);
 		
-		String cleanText = RSAHelper.decrypt(cipherText, keyHolder.getPrivateKey(), true);
+		String cleanText = RSAHelper.decrypt(cipherText, keyHolder.privateKey(), true);
 		log.info("rsa decrypted string: {}", cleanText);
 		
 		assertEquals(testVector, cleanText);
