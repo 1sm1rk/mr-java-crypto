@@ -18,6 +18,12 @@ import javax.crypto.NoSuchPaddingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/*
+ * //TODO: boundaries check
+ * test side online
+ * https://www.devglan.com/online-tools/rsa-encryption-decryption
+ * https://medium.com/@danaschoeman/rsa-encryption-padding-with-java-examples-020c4e59ca5e
+ */
 public class RSAHelper {
 	static Logger logger = LoggerFactory.getLogger(RSAHelper.class);
 	private static final String ALGORITHM = "RSA/ECB/OAEPWithSHA-256AndMGF1Padding";

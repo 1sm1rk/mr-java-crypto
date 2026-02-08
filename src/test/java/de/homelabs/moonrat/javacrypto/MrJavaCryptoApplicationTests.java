@@ -2,7 +2,6 @@ package de.homelabs.moonrat.javacrypto;
 
 import static org.junit.Assert.assertEquals;
 
-import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;

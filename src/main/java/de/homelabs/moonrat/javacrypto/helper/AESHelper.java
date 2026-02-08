@@ -15,13 +15,23 @@ import javax.crypto.spec.SecretKeySpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/*
+ * //TODO: boundaries check
+ * https://mkyong.com/java/java-aes-encryption-and-decryption/
+ * https://medium.com/@johnvazna/implementing-local-aes-gcm-encryption-and-decryption-in-java-ac1dacaaa409
+ * 
+ * IV length
+ * 
+ * https://crypto.stackexchange.com/questions/41601/aes-gcm-recommended-iv-size-why-12-bytes
+ * https://csrc.nist.gov/csrc/media/Events/2023/third-workshop-on-block-cipher-modes-of-operation/documents/accepted-papers/Practical%20Challenges%20with%20AES-GCM.pdf
+ */
 public class AESHelper {
 	private static final Logger logger = LoggerFactory.getLogger(AESHelper.class);
 	private static final String ALGORITHM = "AES/GCM/NoPadding";
 	private static final int KEY_SIZE = 256;
-	private static final int IV_SIZE = 32;
+	//private static final int IV_SIZE = 32;
+	private static final int IV_SIZE = 16;
 	private static final int TAG_LENGTH_BITS = 128;
-	
 	
 	/**
 	 * return AES key derived from a password
@@ -29,17 +39,27 @@ public class AESHelper {
 	 * @param password
 	 * @return Optional<SecretKey>
 	 */
-	public static Optional<SecretKey> getAESKeyFromPassword(String password)
-			throws NoSuchAlgorithmException, InvalidKeySpecException {
+	public static Optional<SecretKey> getAESKeyFromPassword(byte[] password) {
 
 		try {
-			SecretKey secret = new SecretKeySpec(password.getBytes(), "AES");
+			SecretKey secret = new SecretKeySpec(password, "AES");
 			return Optional.of(secret);
 		} catch (Exception e) {
 			logger.error(e.getLocalizedMessage());
 		}
 		
 		return Optional.empty();
+	}
+	
+	/**
+	 * return AES key derived from a password
+	 * 
+	 * @param password
+	 * @return Optional<SecretKey>
+	 */
+	public static Optional<SecretKey> getAESKeyFromPassword(String password) {
+
+		return getAESKeyFromPassword(password.getBytes());
 	}
 
 	/**
@@ -108,7 +128,14 @@ public class AESHelper {
 	        byte[] combinedIvAndCipherText = new byte[iv.length + encryptedBytes.length];
 	        System.arraycopy(iv, 0, combinedIvAndCipherText, 0, iv.length);
 	        System.arraycopy(encryptedBytes, 0, combinedIvAndCipherText, iv.length, encryptedBytes.length);
-	
+	        //other method to combine
+	        /*
+	         * byte[] combinedIvAndCipherText = ByteBuffer.allocate(iv.length + encryptedBytes.length)
+                .put(iv)
+                .put(encryptedBytes)
+                .array();
+	         */
+	        
 	        if (encodeBase64) {
 	        	return Optional.of(Base64.getEncoder().encode(combinedIvAndCipherText));
 	        } else {
@@ -129,6 +156,17 @@ public class AESHelper {
      * @return String decrypted byte array
      */
     public static Optional<byte[]> decrypt(byte[] input, SecretKey key, boolean isBase64) {
+    	/*
+    	 * other ways to extract iv and message
+    	 * ByteBuffer bb = ByteBuffer.wrap(cText);
+
+        byte[] iv = new byte[IV_LENGTH_BYTE];
+        bb.get(iv);
+        //bb.get(iv, 0, iv.length);
+
+        byte[] cipherText = new byte[bb.remaining()];
+        bb.get(cipherText);
+    	 */
     	try {
 	    	// decode base64 if needed
 	   		byte[] decodedCipherText = isBase64 ? Base64.getDecoder().decode(input) : input;  	
