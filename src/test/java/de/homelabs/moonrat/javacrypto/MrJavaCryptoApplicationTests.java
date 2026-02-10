@@ -1,17 +1,17 @@
 package de.homelabs.moonrat.javacrypto;
 
-import java.security.InvalidAlgorithmParameterException;
+import static org.junit.Assert.assertEquals;
+
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
+import java.util.Optional;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,62 +19,44 @@ import de.homelabs.moonrat.javacrypto.helper.AESHelper;
 import de.homelabs.moonrat.javacrypto.helper.CryptKeyHolder;
 import de.homelabs.moonrat.javacrypto.helper.RSAHelper;
 
-class MrJavaCryptoApplicationTests {
+public class MrJavaCryptoApplicationTests {
 
 	private static final Logger log = LoggerFactory.getLogger(MrJavaCryptoApplicationTests.class);
 	
-	String iv = "1234567890123456";	
-	String skey = "12345678901234567890123456789012";
-	String input = "$$00123";
-	String testVector = "YyPRZBKRAyzvg1KncL8mhg==";
+	//String iv = "1234567890123456";	
+	//private static final String skey = "12345678901234567890123456789012";
+	private static final String input = "$$00123";
+	private static final String testVector = "YyPRZBKRAyzvg1KncL8mhg==";
 
 	
 	@Test
-	void aesEncryptionTest() {
-		String encryptedString = "";
-		try {
-			encryptedString = AESHelper.encrypt(input, skey, iv, true);
-		} catch (InvalidKeyException | NoSuchPaddingException | NoSuchAlgorithmException
-				| InvalidAlgorithmParameterException | BadPaddingException | IllegalBlockSizeException
-				| InvalidKeySpecException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	public void aesEncryptionAndDecryptionTest() {
+		SecretKey key = AESHelper.generateKeys().orElseThrow();
+		byte[] nonce = AESHelper.generateNonce();
 		
-		log.info("encrypted String - {}", encryptedString);
+		byte[] encryptedBuffer = AESHelper.encrypt(input.getBytes(), key, nonce, true).orElseThrow();
 		
-		assertEquals(testVector,encryptedString);
+				
+		log.info("encrypted String - {}", new String(encryptedBuffer));
+		
+		//assertEquals(testVector,new String(encryptedBuffer));
+	
+		byte[] decryptedString = AESHelper.decrypt(encryptedBuffer, key, true).orElseThrow();
+		log.info("decrypted String - {}", new String(decryptedString));
+		
+		assertEquals(input, new String(decryptedString));
 	}
 	
 	@Test
-	void aesDecryptionTest() {
-		String decryptedString = "";
+	public void rsaEncryptionAndDecryptionTest() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException {
 		
-		try {
-			decryptedString = AESHelper.decrypt(testVector, skey, iv, true);
-		} catch (InvalidKeyException | NoSuchPaddingException | NoSuchAlgorithmException
-				| InvalidAlgorithmParameterException | BadPaddingException | IllegalBlockSizeException
-				| InvalidKeySpecException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		Optional<CryptKeyHolder> oKeyHolder = RSAHelper.createRSAKeys(4096);
+		CryptKeyHolder keyHolder = oKeyHolder.orElseThrow();
 		
-		log.info("decrypted String - {}", decryptedString);
-		
-		assertEquals(input,decryptedString);
-	}
-	
-	@Test
-	void rsaEncryptionAndDecryptionTest() 
-			throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, 
-			IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
-		
-		CryptKeyHolder keyHolder = RSAHelper.createRSAKeys(2048);
-		
-		String cipherText = RSAHelper.encrypt(testVector, keyHolder.getPublicKey(), true);
+		String cipherText = RSAHelper.encrypt(testVector, keyHolder.publicKey(), true).orElseThrow();
 		log.info("rsa encrypted string: {}", cipherText);
 		
-		String cleanText = RSAHelper.decrypt(cipherText, keyHolder.getPrivateKey(), true);
+		String cleanText = RSAHelper.decrypt(cipherText, keyHolder.privateKey(), true).get();
 		log.info("rsa decrypted string: {}", cleanText);
 		
 		assertEquals(testVector, cleanText);
